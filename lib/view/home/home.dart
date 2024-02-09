@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:mcsm_panel/model/data.dart';
+import 'package:mcsm_panel/util/bar.dart';
 import 'package:mcsm_panel/util/ring.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,7 +15,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String serverUrl = '';
+  String apiUrl = 'api/service/remote_services_system';
   TextEditingController serverUrlController = TextEditingController();
   ServerStatSimple responseData = ServerStatSimple(
       status: 200,
@@ -87,36 +89,32 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    serverUrl = 'https://example.com/api/service/remote_services_system';
     fetchDataFromServer();
   }
 
   Future<void> fetchDataFromServer() async {
     try {
-      final response = await http.get(Uri.parse(serverUrl));
+      final prefs = await SharedPreferences.getInstance();
+      final url = prefs.getString("serverUrl") ?? "http://demo.url/";
+      final response = await http.get(Uri.parse(url + apiUrl));
       if (response.statusCode == 200) {
         setState(() {
           responseData = json.decode(response.body);
         });
       } else {
-        hideResponseData();
         showErrorMessage();
       }
     } catch (e) {
-      hideResponseData();
       showErrorMessage();
     }
   }
 
-  void hideResponseData() {
-    setState(() {});
-  }
-
   void showErrorMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('数据拉取失败'),
-        duration: Duration(seconds: 3),
+      SnackBar(
+        content: const Text('数据拉取失败'),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(label: '确定', onPressed: () {}),
       ),
     );
   }
@@ -131,18 +129,14 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(16.0),
           children: [
             const Row(children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(8, 0, 0, 0),
-                child: Text(
-                  '服务器信息',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Text(
+                '服务器信息',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-              )
+              ),
             ]),
-            const SizedBox(height: 20),
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -166,9 +160,9 @@ class _HomePageState extends State<HomePage> {
             child: Text(
               "服务器-$serverName",
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.greenAccent),
             ),
           ),
           Padding(
@@ -177,45 +171,63 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    _buildCircularChart("CPU", data.system.cpuUsage),
-                    _buildCircularChart('Memory', data.system.memUsage),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: RingChart(
+                            radius: 48,
+                            strokeWidth: 8,
+                            value: data.system.cpuUsage,
+                            ringColor: Colors.white,
+                            progressColor: Colors.greenAccent,
+                            text:
+                                "CPU ${(data.system.cpuUsage * 100).toInt()}%",
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            const Text(
+                              "内存",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: ProgressBar(
+                                  value: data.system.memUsage,
+                                  backgroundColor: Colors.white,
+                                  progressColor: Colors.greenAccent,
+                                  width: 56,
+                                  height: 8,
+                                ))
+                          ],
+                        )
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInfoLine("守护进程版本号", data.version),
+                        _buildInfoLine('平台', data.system.platform),
+                        _buildInfoLine('启动时间', "${data.system.uptime}"),
+                        _buildInfoLine('可用内存', "${data.system.freemem}"),
+                      ],
+                    )
                   ],
                 ),
-                _buildInfoLine("守护进程版本号", data.version),
-                _buildInfoLine('平台', data.system.platform),
-                _buildInfoLine('启动时间', "${data.system.uptime}"),
-                _buildInfoLine('可用内存', "${data.system.freemem}"),
               ],
             ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildCircularChart(String title, double value) {
-    return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            RingChart(
-              radius: 48,
-              strokeWidth: 8,
-              value: value,
-              ringColor: Colors.white,
-              progressColor: Colors.greenAccent,
-              text: "${value * 100}%",
-            ),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ],
-        ));
   }
 
   Widget _buildInfoLine(String title, String value) {
@@ -228,11 +240,11 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 12),
               )),
           Text(
             value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
         ],
       ),

@@ -79,7 +79,7 @@ class ResourceUsageRingPainter extends CustomPainter {
     TextSpan span = TextSpan(
       style: const TextStyle(
         color: Colors.grey,
-        fontSize: 16.0,
+        fontSize: 12.0,
         fontWeight: FontWeight.bold,
       ),
       text: text,
