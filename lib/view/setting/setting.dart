@@ -24,6 +24,7 @@ class _SettingPageState extends State<SettingPage> {
     setState(() {
       _followSystemDark = prefs.getBool("followSystemDark") ?? false;
       _controllerServerUrl.text = prefs.getString("serverUrl") ?? '';
+      _controllerAPIKey.text = prefs.getString("apiKey") ?? '';
     });
   }
 
@@ -121,7 +122,7 @@ class _SettingPageState extends State<SettingPage> {
                                         await SharedPreferences.getInstance();
                                     setState(() {
                                       prefs.setString(
-                                          "APIKey", _controllerAPIKey.text);
+                                          "apiKey", _controllerAPIKey.text);
                                       Navigator.of(context).pop();
                                     });
                                   },
