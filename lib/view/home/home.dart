@@ -135,7 +135,8 @@ class _HomePageState extends State<HomePage> {
                 bottom: TabBar(
                   tabs: myTabs,
                   isScrollable: true,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  indicatorColor: Theme.of(context).colorScheme.inversePrimary,
+                  labelColor: Theme.of(context).colorScheme.inversePrimary,
                 )),
             body: TabBarView(children: [
               ListView(
