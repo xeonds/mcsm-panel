@@ -15,7 +15,35 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String apiUrl = 'api/service/remote_services_system';
+  String apiOverview = 'api/overview';
+  String apiRemoteServices = 'api/service/remote_services_system';
+  String apiSettings = '/api/overview/setting';
+  String apiUserCreate = 'api/auth';
+  String apiUsers = 'api/overview';
+  String apiUserSearch = 'api/auth/search';
+  String apiUserUpdateSelf = 'api/auth/update';
+  String apiRemoteServicesNew = 'api/service/remote_services';
+  String apiRemoteServicesList = 'api/service/remote_services_list';
+  String apiLinkRemoteService = 'api/service/link_remote_service';
+  String apiInstance = 'api/instance';
+  String apiRemoteServiceInstance = 'api/service/remote_service_instances';
+  String apiStartInstance = 'api/protected_instance/open';
+  String apiStopInstance = 'api/protected_instance/stop';
+  String apiKillInstance = 'api/protected_instance/kill';
+  String apiRestartInstance = 'api/protected_instance/restart';
+  String apiSendCommandInstance = 'api/protected_instance/command';
+  String apiGetInstanceLog = 'api/protected_instance/outputlog';
+  String apiGetInstanceConfig = 'api/protected_instance/process_config/list';
+  String apiUpdateInstanceConfig = 'api/protected_instance/process_config/file';
+  String apiInstanceFileList = 'api/files/list';
+  String apiInstanceFile = 'api/files';
+  String apiInstanceFileCompress = 'api/files/compress';
+  String apiInstanceFileCopy = 'api/files/copy';
+  String apiInstanceMkdir = 'api/files/mkdir';
+  String apiInstanceMoveFile = 'api/files/move';
+  String apiInstanceUploadFile = 'api/files/upload';
+  String apiInstanceDownloadFile = 'api/files/download';
+  String apiCreateSchedule = 'api/protected_schedule';
   TextEditingController serverUrlController = TextEditingController();
   ServerStatSimple responseData = ServerStatSimple(
       status: 200,
@@ -87,10 +115,10 @@ class _HomePageState extends State<HomePage> {
       time: 1643879914006);
   final List<Tab> myTabs = <Tab>[
     const Tab(text: '概览'),
-    const Tab(text: '服务器'),
+    const Tab(text: '进程'),
     const Tab(text: '账户'),
-    const Tab(text: '文件'),
   ];
+  List<Map<String, dynamic>> instanceData = [];
 
   @override
   void initState() {
@@ -102,10 +130,15 @@ class _HomePageState extends State<HomePage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final url = prefs.getString("serverUrl") ?? "http://demo.url/";
-      final response = await http.get(Uri.parse(url + apiUrl));
-      if (response.statusCode == 200) {
+      final apiKey = prefs.getString("apiKey") ?? "";
+      final response = await http
+          .get(Uri.parse(url + apiRemoteServices), headers: {'apikey': apiKey});
+      final response2 =
+          await http.get(Uri.parse('$url$apiOverview?apikey=$apiKey'));
+      if (response.statusCode == 200 && response2.statusCode == 200) {
         setState(() {
           responseData = json.decode(response.body);
+          instanceData = json.decode(response2.body);
         });
       } else {
         showErrorMessage();
@@ -144,7 +177,7 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const Row(children: [
                     Text(
-                      '服务器信息',
+                      '服务器',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -158,6 +191,22 @@ class _HomePageState extends State<HomePage> {
                     itemBuilder: (context, index) => _serverInfoWidget(
                         responseData.data[index].system.hostname,
                         responseData.data[index]),
+                  ),
+                  const Row(children: [
+                    Text(
+                      '进程',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ]),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: instanceData.length,
+                    itemBuilder: (context, index) =>
+                        _instanceInfoWidget(instanceData),
                   ),
                 ],
               ),
@@ -185,24 +234,6 @@ class _HomePageState extends State<HomePage> {
                   const Row(children: [
                     Text(
                       '账户',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ]),
-                  Container(
-                    alignment: Alignment.center,
-                    child: const Text("开发中"),
-                  )
-                ],
-              ),
-              ListView(
-                padding: const EdgeInsets.all(16.0),
-                children: [
-                  const Row(children: [
-                    Text(
-                      '文件',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -325,6 +356,38 @@ class _HomePageState extends State<HomePage> {
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _instanceInfoWidget(List<Map<String, dynamic>> data) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: data.map((info) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  info['title'] ?? '',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  info['value'] ?? '',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            );
+          }).toList(),
+        ),
       ),
     );
   }

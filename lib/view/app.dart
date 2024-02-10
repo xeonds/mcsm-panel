@@ -36,9 +36,9 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           PageInfo(
             index: 1,
-            icon: Icons.task,
-            iconSelected: Icons.task,
-            label: '服务端',
+            icon: Icons.code,
+            iconSelected: Icons.code,
+            label: '快捷指令',
           ),
           PageInfo(
             index: 2,
